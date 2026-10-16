@@ -2,14 +2,35 @@
 
 Django 6.1 — интернет-магазин автозапчастей с каталогом, корзиной, оформлением заказов и системой авторизации.
 
+## 🚀 Быстрый старт
+
+```bash
+# 1. Клонировать репозиторий
+git clone https://github.com/hotabmax/AutoPartsStore.git
+cd AutoPartsStore
+
+# 2. Создать .env
+cp .env.example .env
+
+# 3. Запустить через Docker
+docker-compose up -d
+
+# 4. Создать суперпользователя
+docker-compose exec web python manage.py createsuperuser
+
+# 5. Собрать статику
+docker-compose run --rm collectstatic
+```
+
+Откройте: http://127.0.0.1:8000/
+
 ## 📋 Содержание
 
 - [Возможности](#возможности)
 - [Стек технологий](#стек-технологий)
 - [Структура проекта](#структура-проекта)
-- [Установка и запуск](#установка-и-запуск)
+- [Локальный запуск (без Docker)](#локальный-запуск-без-docker)
 - [Docker](#docker)
-- [Производственный деплой](#производственный-деплой)
 - [Админ-панель](#админ-панель)
 - [Модели данных](#модели-данных)
 - [API endpoints](#api-endpoints)
@@ -37,7 +58,7 @@ Django 6.1 — интернет-магазин автозапчастей с к�
 | База данных | SQLite (dev) / PostgreSQL (prod) |
 | Фронтенд | Bootstrap 5.3, Font Awesome 6 |
 | Изображения | Pillow 10+ |
-| Тестирование | Django Test Framework |
+| Тестирование | Django Test Framework (44 теста) |
 | WSGI | Gunicorn |
 | Static files | WhiteNoise |
 
@@ -46,23 +67,19 @@ Django 6.1 — интернет-магазин автозапчастей с к�
 ```
 Shop/
 ├── autoshop/           # Конфигурация проекта
-│   ├── settings.py     # Настройки (приложения, middleware, шаблоны)
+│   ├── settings.py     # Настройки (env, middleware, шаблоны)
 │   ├── urls.py         # Корневые URL-маршруты
-│   ├── wsgi.py         # WSGI-конфигурация
-│   └── asgi.py         # ASGI-конфигурация
+│   └── wsgi.py         # WSGI-конфигурация
 ├── catalog/            # Приложение каталога
 │   ├── models.py       # Category, Manufacturer, Product
 │   ├── views.py        # Главная, каталог, поиск, детали
 │   ├── admin.py        # Админ-конфигурация
-│   ├── urls.py         # /categories/, /product/<slug>/, /search/
-│   └── tests.py        # Unit-тесты
+│   └── urls.py         # /categories/, /product/<slug>/, /search/
 ├── orders/             # Приложение заказов
 │   ├── models.py       # Cart, CartItem, Order, OrderItem
 │   ├── views.py        # Корзина, checkout, история
-│   ├── admin.py        # Админ-конфигурация
 │   └── urls.py         # /cart/, /checkout/, /history/
 ├── accounts/           # Приложение авторизации
-│   ├── models.py       # UserProfile
 │   ├── views.py        # register, login, logout
 │   ├── forms.py        # UserRegisterForm, UserLoginForm
 │   └── urls.py         # /accounts/register/, /login/, /logout/
@@ -73,21 +90,17 @@ Shop/
 │   └── accounts/       # Шаблоны авторизации
 ├── static/             # Статические файлы
 │   └── css/style.css   # Кастомные стили
-├── media/              # Загруженные файлы (изображения)
+├── Dockerfile          # Docker-образ приложения
+├── docker-compose.yml  # Dev-окружение (Django + PostgreSQL)
+├── docker-compose.prod.yml  # Prod-конфигурация
+├── .env.example        # Шаблон переменных окружения
 ├── manage.py           # CLI-утилита Django
 └── requirements.txt    # Зависимости
 ```
 
-## Установка и запуск
+## Локальный запуск (без Docker)
 
-### 1. Клонирование
-
-```bash
-git clone https://github.com/hotabmax/Shop.git
-cd Shop
-```
-
-### 2. Виртуальное окружение
+### 1. Виртуальное окружение
 
 ```powershell
 python -m venv venv
@@ -95,46 +108,27 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-### 3. Миграции
+### 2. Настройка окружения
+
+```bash
+cp .env.example .env
+# Отредактировать .env при необходимости
+```
+
+### 3. Миграции и суперпользователь
 
 ```bash
 python manage.py migrate
-```
-
-### 4. Суперпользователь
-
-```bash
 python manage.py createsuperuser
-# Логин: admin, Пароль: admin123 (или свой)
 ```
 
-### 5. Запуск сервера
+### 4. Запуск
 
 ```bash
 python manage.py runserver
 ```
 
-Откройте: http://127.0.0.1:8000/
-
 ## Docker
-
-### Быстрый старт
-
-```bash
-# 1. Создать .env файл
-cp .env.example .env
-
-# 2. Запустить всё (PostgreSQL + Django)
-docker-compose up -d
-
-# 3. Создать суперпользователя
-docker-compose exec web python manage.py createsuperuser
-
-# 4. Собрать статику (один раз)
-docker-compose run --rm collectstatic
-```
-
-Откройте: http://127.0.0.1:8000/
 
 ### Команды
 
@@ -145,14 +139,14 @@ docker-compose up -d
 # Остановить
 docker-compose down
 
-# Остановить и удалить volumes (внимание: данные БД удалятся)
+# Удалить volumes (внимание: данные БД удалятся)
 docker-compose down -v
 
 # Логи
 docker-compose logs -f web
 docker-compose logs -f db
 
-# Выполнить команды в контейнере
+# Выполнить команды
 docker-compose exec web python manage.py migrate
 docker-compose exec web python manage.py shell
 
@@ -166,63 +160,9 @@ docker-compose build --no-cache
 # Запустить продакшен-конфигурацию
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
-# Собрать образ
+# Собрать и запустить образ
 docker build -t autoshop:latest .
-
-# Запустить с образом
-docker run -d \
-  --name autoshop \
-  -p 8000:8000 \
-  --env-file .env \
-  -e USE_POSTGRESQL=True \
-  autoshop:latest
-```
-
-## Производственный деплой
-
-Проект использует Docker для деплоя. Дополнительные скрипты не нужны.
-
-### Развёртывание на сервере
-
-```bash
-# 1. Клонировать репозиторий
-git clone https://github.com/hotabmax/AutoPartsStore.git
-cd AutoPartsStore
-
-# 2. Создать .env с production-значениями
-cp .env.example .env
-# Редактировать .env: DJANGO_DEBUG=False, DJANGO_ALLOWED_HOSTS, DB_PASSWORD
-
-# 3. Запустить
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-# 4. Создать суперпользователя
-docker compose exec web python manage.py createsuperuser
-```
-
-### Nginx (опционально)
-
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-
-    location /static/ {
-        alias /path/to/project/staticfiles/;
-    }
-
-    location /media/ {
-        alias /path/to/project/media/;
-    }
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+docker run -d --name autoshop -p 8000:8000 --env-file .env autoshop:latest
 ```
 
 ## Админ-панель

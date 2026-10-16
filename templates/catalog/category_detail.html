@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category.name }} - АвтоЗапчасти{% endblock %}
+
+{% block content %}
+<div class="bg-light py-4">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'catalog:index' %}">Главная</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'catalog:categories' %}">Каталог</a></li>
+                <li class="breadcrumb-item active">{{ category.name }}</li>
+            </ol>
+        </nav>
+        <h1><i class="fas fa-box"></i> {{ category.name }}</h1>
+        {% if category.description %}
+            <p class="text-muted">{{ category.description }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<section class="py-5">
+    <div class="container">
+        {% if page_obj %}
+        <div class="row g-4">
+            {% for product in page_obj %}
+            <div class="col-md-4 col-lg-3">
+                <div class="card h-100 product-card">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-body d-flex align-items-center justify-content-center" style="height: 200px; background: #f8f9fa;">
+                            <i class="fas fa-image fa-3x text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <h6 class="card-title">
+                            <a href="{% url 'catalog:product_detail' slug=product.slug %}" class="text-decoration-none text-dark">{{ product.name }}</a>
+                        </h6>
+                        <p class="text-muted small mb-1">Арт: {{ product.article }}</p>
+                        {% if product.manufacturer %}
+                            <p class="text-muted small mb-1">
+                                <i class="fas fa-industry"></i> {{ product.manufacturer.name }}
+                            </p>
+                        {% endif %}
+                        <div class="mt-auto">
+                            <h5 class="text-primary mb-2">{{ product.price }} ₽</h5>
+                            <form action="{% url 'orders:add_to_cart' product_id=product.id %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-cart-plus"></i> В корзину
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Пагинация -->
+        <nav aria-label="Навигация по страницам" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; Первая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Пред.</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item disabled">
+                    <span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">След.</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Последняя &raquo;</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% else %}
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle"></i> В данной категории пока нет товаров
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

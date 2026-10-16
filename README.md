@@ -8,6 +8,7 @@ Django 6.1 — интернет-магазин автозапчастей с к�
 - [Стек технологий](#стек-технологий)
 - [Структура проекта](#структура-проекта)
 - [Установка и запуск](#установка-и-запуск)
+- [Docker](#docker)
 - [Производственный деплой](#производственный-деплой)
 - [Админ-панель](#админ-панель)
 - [Модели данных](#модели-данных)
@@ -114,6 +115,68 @@ python manage.py runserver
 ```
 
 Откройте: http://127.0.0.1:8000/
+
+## Docker
+
+### Быстрый старт
+
+```bash
+# 1. Создать .env файл
+cp .env.example .env
+
+# 2. Запустить всё (PostgreSQL + Django)
+docker-compose up -d
+
+# 3. Создать суперпользователя
+docker-compose exec web python manage.py createsuperuser
+
+# 4. Собрать статику (один раз)
+docker-compose run --rm collectstatic
+```
+
+Откройте: http://127.0.0.1:8000/
+
+### Команды
+
+```bash
+# Запустить в фоне
+docker-compose up -d
+
+# Остановить
+docker-compose down
+
+# Остановить и удалить volumes (внимание: данные БД удалятся)
+docker-compose down -v
+
+# Логи
+docker-compose logs -f web
+docker-compose logs -f db
+
+# Выполнить команды в контейнере
+docker-compose exec web python manage.py migrate
+docker-compose exec web python manage.py shell
+
+# Пересобрать образ
+docker-compose build --no-cache
+```
+
+### Продакшен
+
+```bash
+# Запустить продакшен-конфигурацию
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# Собрать образ
+docker build -t autoshop:latest .
+
+# Запустить с образом
+docker run -d \
+  --name autoshop \
+  -p 8000:8000 \
+  --env-file .env \
+  -e USE_POSTGRESQL=True \
+  autoshop:latest
+```
 
 ## Производственный деплой
 

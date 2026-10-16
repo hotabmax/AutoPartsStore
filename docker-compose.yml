@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # ===== База данных =====
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME:-autoshop}
+      POSTGRES_USER: ${DB_USER:-autoshop}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-autoshop_password}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-autoshop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Приложение =====
+  web:
+    build: .
+    command: >
+      gunicorn autoshop.wsgi
+      --bind 0.0.0.0:8000
+      --workers 3
+      --timeout 120
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key-change-in-production}
+      - DJANGO_DEBUG=True
+      - DJANGO_ALLOWED_HOSTS=127.0.0.1,localhost,0.0.0.0
+      - USE_POSTGRESQL=True
+      - DB_NAME=${DB_NAME:-autoshop}
+      - DB_USER=${DB_USER:-autoshop}
+      - DB_PASSWORD=${DB_PASSWORD:-autoshop_password}
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ===== Сбор статических файлов (однократно) =====
+  collectstatic:
+    build: .
+    command: python manage.py collectstatic --noinput --clear
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-dev-key}
+      - DJANGO_DEBUG=True
+      - USE_POSTGRESQL=True
+      - DB_NAME=${DB_NAME:-autoshop}
+      - DB_USER=${DB_USER:-autoshop}
+      - DB_PASSWORD=${DB_PASSWORD:-autoshop_password}
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

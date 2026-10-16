@@ -23,6 +23,7 @@ db.sqlite3-journal
 # IDE
 .vscode/
 .idea/
+.gigacode_vsc/
 *.swp
 *.swo
 *~

@@ -8,6 +8,7 @@ Django 6.1 — интернет-магазин автозапчастей с к�
 - [Стек технологий](#стек-технологий)
 - [Структура проекта](#структура-проекта)
 - [Установка и запуск](#установка-и-запуск)
+- [Производственный деплой](#производственный-деплой)
 - [Админ-панель](#админ-панель)
 - [Модели данных](#модели-данных)
 - [API endpoints](#api-endpoints)
@@ -32,10 +33,12 @@ Django 6.1 — интернет-магазин автозапчастей с к�
 |-----------|-----------|
 | Язык | Python 3.12 |
 | Фреймворк | Django 6.1 |
-| База данных | SQLite (по умолчанию) |
+| База данных | SQLite (dev) / PostgreSQL (prod) |
 | Фронтенд | Bootstrap 5.3, Font Awesome 6 |
 | Изображения | Pillow 10+ |
 | Тестирование | Django Test Framework |
+| WSGI | Gunicorn |
+| Static files | WhiteNoise |
 
 ## Структура проекта
 
@@ -111,6 +114,114 @@ python manage.py runserver
 ```
 
 Откройте: http://127.0.0.1:8000/
+
+## Производственный деплой
+
+### 1. Настройка окружения
+
+```bash
+# Скопировать пример окружения
+cp .env.example .env
+
+# Или создать вручную
+echo "DJANGO_SECRET_KEY=$(python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')" > .env
+echo "DJANGO_DEBUG=False" >> .env
+echo "DJANGO_ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com" >> .env
+```
+
+### 2. База данных
+
+**PostgreSQL (рекомендуется):**
+```bash
+# Установить драйвер
+pip install psycopg2-binary
+
+# Настроить в .env
+DB_NAME=autoshop
+DB_USER=autoshop
+DB_PASSWORD=your-strong-password
+DB_HOST=localhost
+DB_PORT=5432
+```
+
+**SQLite (для тестирования):**
+```bash
+# Работает по умолчанию при DEBUG=True
+```
+
+### 3. Сбор статических файлов
+
+```bash
+python manage.py collectstatic --noinput --clear
+```
+
+### 4. Запуск в продакшене
+
+**Gunicorn (WSGI сервер):**
+```bash
+pip install gunicorn
+gunicorn autoshop.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 120
+```
+
+**С Procfile (Heroku, Railway, etc.):**
+```bash
+gunicorn autoshop.wsgi --bind 0.0.0.0:$PORT
+```
+
+### 5. Nginx (опционально)
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    location /static/ {
+        alias /path/to/project/staticfiles/;
+    }
+
+    location /media/ {
+        alias /path/to/project/media/;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### 6. SSL (Let's Encrypt)
+
+```bash
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+```
+
+### 7. systemd (автостарт)
+
+```ini
+# /etc/systemd/system/autoshop.service
+[Unit]
+Description=Autoshop Django App
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/project
+ExecStart=/path/to/project/venv/bin/gunicorn autoshop.wsgi --bind 127.0.0.1:8000
+EnvironmentFile=/path/to/project/.env
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable autoshop
+sudo systemctl start autoshop
+```
 
 ## Админ-панель
 

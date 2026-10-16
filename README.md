@@ -180,58 +180,27 @@ docker run -d \
 
 ## Производственный деплой
 
-### 1. Настройка окружения
+Проект использует Docker для деплоя. Дополнительные скрипты не нужны.
+
+### Развёртывание на сервере
 
 ```bash
-# Скопировать пример окружения
+# 1. Клонировать репозиторий
+git clone https://github.com/hotabmax/AutoPartsStore.git
+cd AutoPartsStore
+
+# 2. Создать .env с production-значениями
 cp .env.example .env
+# Редактировать .env: DJANGO_DEBUG=False, DJANGO_ALLOWED_HOSTS, DB_PASSWORD
 
-# Или создать вручную
-echo "DJANGO_SECRET_KEY=$(python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')" > .env
-echo "DJANGO_DEBUG=False" >> .env
-echo "DJANGO_ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com" >> .env
+# 3. Запустить
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# 4. Создать суперпользователя
+docker compose exec web python manage.py createsuperuser
 ```
 
-### 2. База данных
-
-**PostgreSQL (рекомендуется):**
-```bash
-# Установить драйвер
-pip install psycopg2-binary
-
-# Настроить в .env
-DB_NAME=autoshop
-DB_USER=autoshop
-DB_PASSWORD=your-strong-password
-DB_HOST=localhost
-DB_PORT=5432
-```
-
-**SQLite (для тестирования):**
-```bash
-# Работает по умолчанию при DEBUG=True
-```
-
-### 3. Сбор статических файлов
-
-```bash
-python manage.py collectstatic --noinput --clear
-```
-
-### 4. Запуск в продакшене
-
-**Gunicorn (WSGI сервер):**
-```bash
-pip install gunicorn
-gunicorn autoshop.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 120
-```
-
-**С Procfile (Heroku, Railway, etc.):**
-```bash
-gunicorn autoshop.wsgi --bind 0.0.0.0:$PORT
-```
-
-### 5. Nginx (опционально)
+### Nginx (опционально)
 
 ```nginx
 server {
@@ -254,36 +223,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-```
-
-### 6. SSL (Let's Encrypt)
-
-```bash
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
-```
-
-### 7. systemd (автостарт)
-
-```ini
-# /etc/systemd/system/autoshop.service
-[Unit]
-Description=Autoshop Django App
-After=network.target
-
-[Service]
-User=www-data
-Group=www-data
-WorkingDirectory=/path/to/project
-ExecStart=/path/to/project/venv/bin/gunicorn autoshop.wsgi --bind 127.0.0.1:8000
-EnvironmentFile=/path/to/project/.env
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl enable autoshop
-sudo systemctl start autoshop
 ```
 
 ## Админ-панель
